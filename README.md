@@ -6,4 +6,7 @@ How to install
 3. Click Enable the script in Substance painter in Phyton menu.
 
 --------
+requirements
 addon : pip install -r requirements.txt (if you want use update mat in enfusion function)
+## function in custom ver.
+- auto update import in inactive window enfusion when user click export texture from substance (instead of manual click on enfusion window for update import)
