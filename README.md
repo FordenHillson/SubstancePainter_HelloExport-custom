@@ -7,6 +7,9 @@ How to install
 
 --------
 requirements
-addon : pip install -r requirements.txt (if you want use update mat in enfusion function)
+```
+pip install -r requirements.txt
+```
+
 ## function in custom ver.
 - auto update import in inactive window enfusion when user click export texture from substance (instead of manual click on enfusion window for update import)
