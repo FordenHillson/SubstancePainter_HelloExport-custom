@@ -7,6 +7,7 @@ How to install
 
 --------
 requirements
+- python : for use command in cmd
 ```
 pip install -r requirements.txt
 ```
