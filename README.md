@@ -6,4 +6,4 @@ How to install
 3. Click Enable the script in Substance painter in Phyton menu.
 
 ## function in custom ver.
-- Custom Exporting with Export Selection by slection group and Export All group layers
+- Custom Exporting with Export Selection by selection group and Export All group layers
