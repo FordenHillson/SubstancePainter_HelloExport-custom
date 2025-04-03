@@ -1,5 +1,6 @@
-from PySide6 import QtWidgets, QtGui
+from PySide6 import QtWidgets, QtGui, QtCore
 import substance_painter.ui
+import substance_painter.event
 import substance_painter.export
 import substance_painter.project
 import substance_painter.textureset
@@ -22,6 +23,40 @@ def textureSize(size):
         return 11
     elif size == "4096x4096":
         return 12
+
+def export_isolate(groupLayer):
+        # get name of TextureSet
+        stack = substance_painter.textureset.get_active_stack()
+        # get root layer nodes
+        rootLayer = substance_painter.layerstack.get_root_layer_nodes(stack)
+
+        # Dictionary mapping layer names to their corresponding texture set identifiers
+        layer_map = {
+            "Global": "$textureSet_GLOBAL_MASK",
+            "VFX": "$textureSet_VFX",
+            "MCR": "$textureSet_MCR",
+            "NMO": "$textureSet_NMO"
+        }
+
+        # Helper function to set visibility
+        def set_visible(node, is_visible):
+            substance_painter.layerstack.Node.set_visible(node, is_visible)
+            
+        # First hide all layers
+        for node in rootLayer:
+            set_visible(node, False)
+        
+        if groupLayer in layer_map:
+            print(f"Exporting {groupLayer}"+" in " + layer_map[groupLayer])
+            # Show the selected layer
+            for node in rootLayer:
+                group = substance_painter.layerstack.Node.get_name(node)
+                if group == groupLayer:
+                    set_visible(node, True)
+                    export_enfution(output_path_input.text(), layer_map[groupLayer], size_dropdown.currentText())                    
+                else:
+                    set_visible(node, False)
+                    
 
 def export_enfution(output_path, maps, selected_size):
     saveData(output_path)
@@ -63,49 +98,8 @@ def export_enfution(output_path, maps, selected_size):
     }
     export_list = substance_painter.export.list_project_textures(config)
     print(export_list)
-    substance_painter.export.export_project_textures(config)
-    
-def export_single():
-        # get name of TextureSet
-        stack = substance_painter.textureset.get_active_stack()
-        # get uid of selected nodes
-        selected_nodes = substance_painter.layerstack.get_selected_nodes(stack)
-        
-        # Check if any nodes are selected
-        if not selected_nodes:
-            show_message_box("No layer is selected. Please select a layer to export.")
-            return
-            
-        rootLayer = substance_painter.layerstack.get_root_layer_nodes(stack)
-        # get name from uid
-        groupLayers = substance_painter.layerstack.Node.get_name(selected_nodes[0])
-        
-        # Dictionary mapping layer names to their corresponding texture set identifiers
-        layer_map = {
-            "Global": "$textureSet_GLOBAL_MASK",
-            "VFX": "$textureSet_VFX",
-            "MCR": "$textureSet_MCR",
-            "NMO": "$textureSet_NMO"
-        }
-        
-        # Check if the selected layer is one of the supported types
-        if groupLayers in layer_map:
-            # Helper function to handle visibility
-            def set_layer_visibility(node, visible):
-                if substance_painter.layerstack.Node.is_visible(node) != visible:
-                    substance_painter.layerstack.Node.set_visible(node, visible)
-            
-            # Hide all layers
-            for x in rootLayer:
-                set_layer_visibility(x, False)
-                
-            # Show only the selected layer
-            set_layer_visibility(selected_nodes[0], True)
-            
-            # Export the texture
-            export_enfution(output_path_input.text(), layer_map[groupLayers], size_dropdown.currentText())
-        else:
-            show_message_box(f"Selected stack '{groupLayers}' does not match Global, VFX, MCR or NMO")
+    substance_painter.export.export_project_textures(config)   
+
 
 def export_all():
         # get name of TextureSet
@@ -131,16 +125,17 @@ def export_all():
             
         # Then process each layer one by one
         for node in rootLayer:
-            groupNameLayer = substance_painter.layerstack.Node.get_name(node)
+            group = substance_painter.layerstack.Node.get_name(node)
             
-            if groupNameLayer in layer_map:
-                print(f"Exporting {groupNameLayer}")
+            if group in layer_map:
+                print(f"Exporting {group}")
                 set_visible_and_export(node, True)
-                export_enfution(output_path_input.text(), layer_map[groupNameLayer], size_dropdown.currentText())
+                export_enfution(output_path_input.text(), layer_map[group], size_dropdown.currentText())
                 set_visible_and_export(node, False)
             else:
-                print(f"Skipping {groupNameLayer} - not in supported layers")
-    
+                print(f"Skipping {group} - not in supported layers")
+
+
 def show_message_box(message):
         msg_box = QtWidgets.QMessageBox()
         msg_box.setText(message)
@@ -197,7 +192,6 @@ def my_callback(*args, **kwargs):
 def saveTriggered(*args, **kwargs):
     print("S A V E")
 
-
 def start_plugin():
     # Create a docked widget
     dev_label = QtWidgets.QLabel("Dev Tools")
@@ -225,26 +219,24 @@ def start_plugin():
     
 
     # Create a button to trigger the export
-    bt_export_mask = QtWidgets.QPushButton("Global Mask")
+    bt_export_mask = QtWidgets.QPushButton("Global")
     bt_export_vfx = QtWidgets.QPushButton("VFX")
     bt_export_mcr = QtWidgets.QPushButton("MCR")
     bt_export_nmo = QtWidgets.QPushButton("NMO")
 
-    bt_export_single = QtWidgets.QPushButton("Export Selection")
+    ##bt_export_isolate = QtWidgets.QPushButton("Export Selection")
     bt_export_all = QtWidgets.QPushButton("Export All")
     bt_logX = QtWidgets.QPushButton("LogX")
 
     # Connect the button to the export_textures function with the output path as an argument
-    bt_export_mask.clicked.connect(lambda: export_enfution(output_path_input.text(), "$textureSet_GLOBAL_MASK", size_dropdown.currentText()))
-    bt_export_vfx.clicked.connect(lambda: export_enfution(output_path_input.text(), "$textureSet_VFX", size_dropdown.currentText()))
-    bt_export_mcr.clicked.connect(lambda: export_enfution(output_path_input.text(), "$textureSet_MCR", size_dropdown.currentText()))
-    bt_export_nmo.clicked.connect(lambda: export_enfution(output_path_input.text(), "$textureSet_NMO", size_dropdown.currentText()))
+    bt_export_mask.clicked.connect(lambda: export_isolate("Global"))
+    bt_export_vfx.clicked.connect(lambda: export_isolate("VFX"))
+    bt_export_mcr.clicked.connect(lambda: export_isolate("MCR"))
+    bt_export_nmo.clicked.connect(lambda: export_isolate("NMO"))
 
-    bt_export_single.clicked.connect(export_single)
+    ##bt_export_isolate.clicked.connect(export_isolate)
     bt_export_all.clicked.connect(export_all)
-    bt_logX.clicked.connect(lambda: logX())
-
-    
+    bt_logX.clicked.connect(lambda: logX())    
 
     # Add the label, input field, and button to the layout
     # layout.addWidget(label)
@@ -257,11 +249,11 @@ def start_plugin():
     layout.addWidget(bt_export_nmo)
 
     layout.addWidget(customExport_label)
-    layout.addWidget(bt_export_single)
+    ##layout.addWidget(bt_export_isolate)
     layout.addWidget(bt_export_all)    
     
     layout.addWidget(dev_label)
-    layout.addWidget(bt_logX)   
+    layout.addWidget(bt_logX)
 
     # Add the docked widget to the UI
     substance_painter.ui.add_dock_widget(plugin_widget)
